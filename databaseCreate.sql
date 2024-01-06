@@ -4,14 +4,24 @@ CREATE TABLE [Users]
     [name]             nvarchar(255)   NOT NULL,
     [surname]          nvarchar(255)   NOT NULL,
     [email]            nvarchar(255)   NOT NULL,
-    [city]             nvarchar(255),
-    [street]           nvarchar(255),
-    [state]            nvarchar(255),
+    [cityId]             int,
+    [streetId]           int,
+    [stateId]            int,
     [zip]              nvarchar(255),
     [houseNumber]      nvarchar(10),
     [creditCardNumber] nvarchar(255)
 )
 GO
+ALTER TABLE [Users]
+    ADD FOREIGN KEY ([cityId]) REFERENCES [Cities] ([cityId])
+GO
+ALTER TABLE [Users]
+    ADD FOREIGN KEY ([stateId]) REFERENCES [States] (stateId)
+GO
+ALTER TABLE [Users]
+    ADD FOREIGN KEY ([streetId]) REFERENCES [Streets] (streetId)
+GO
+
 
 CREATE TABLE [States]
 (
@@ -153,6 +163,20 @@ CREATE TABLE [Studies]
     [slotsLimit] int             NOT NULL
 )
 GO
+CREATE TABLE [Students]
+(
+    [userId]    int             NOT NULL,
+    [studiesId] int             NOT NULL,
+    [year]      int             NOT NULL
+        check (year > 0)
+)
+alter table [Students]
+    add primary key ([userId], [studiesId])
+alter table [Students]
+    add foreign key ([userId]) references [Users] ([userId])
+
+alter table [Students]
+    add foreign key ([studiesId]) references [Studies] ([studiesId])
 
 CREATE TABLE [Syllabuses]
 (
@@ -218,35 +242,26 @@ CREATE TABLE [Modules]
     [courseId] int             NOT NULL
 )
 GO
-
 CREATE TABLE [StationaryModules]
 (
-    [id]       int PRIMARY KEY NOT NULL,
-    [moduleId] int             NOT NULL
+    [moduleId] int PRIMARY KEY NOT NULL
 )
 GO
-
 CREATE TABLE [OnlineSyncModules]
 (
-    [id]       int PRIMARY KEY NOT NULL,
-    [moduleId] int             NOT NULL
+    [moduleId] int PRIMARY KEY NOT NULL
 )
 GO
-
 CREATE TABLE [OnlineAsyncModules]
 (
-    [id]       int PRIMARY KEY NOT NULL,
-    [moduleId] int             NOT NULL
+    [moduleId] int PRIMARY KEY NOT NULL
 )
 GO
-
 CREATE TABLE [HybridModules]
 (
-    [id]       int PRIMARY KEY NOT NULL,
-    [moduleId] int             NOT NULL
+    [moduleId] int  PRIMARY KEY  NOT NULL
 )
 GO
-
 CREATE TABLE [WebinarMeetings]
 (
     [onlineMeetingId] int PRIMARY KEY NOT NULL,
@@ -411,10 +426,6 @@ ALTER TABLE [Webinars]
     ADD FOREIGN KEY ([webinarId]) REFERENCES [EducationForms] ([specificId], [type])
 GO
 
-ALTER TABLE [Studies]
-    ADD FOREIGN KEY ([studiesId]) REFERENCES [EducationForms] ([specificId])
-GO
-
 ALTER TABLE [Courses]
     ADD FOREIGN KEY ([courseId]) REFERENCES [EducationForms] ([specificId])
 GO
@@ -498,16 +509,13 @@ GO
 ALTER TABLE [HybridModules]
     ADD FOREIGN KEY ([moduleId]) REFERENCES [Modules] ([moduleId])
 GO
---err
 ALTER TABLE [OfflineMeetings]
     ADD FOREIGN KEY ([moduleId]) REFERENCES [StationaryModules] ([moduleId])
 GO
---err
 
 ALTER TABLE [OfflineMeetings]
     ADD FOREIGN KEY ([moduleId]) REFERENCES [HybridModules] ([moduleId])
 GO
---err
 
 ALTER TABLE [Recordings]
     ADD FOREIGN KEY ([moduleId]) REFERENCES [OnlineAsyncModules] ([moduleId])
