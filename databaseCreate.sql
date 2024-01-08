@@ -81,10 +81,12 @@ GO
 
 CREATE TABLE [Roles]
 (
-    [roleId] int PRIMARY KEY NOT NULL,
-    [userId] int             NOT NULL
+    [roleId] int NOT NULL,
+    [userId] int NOT NULL
 )
 GO
+alter table [Roles]
+    add primary key ([roleId], [userId])
 
 CREATE TABLE [RoleDetails]
 (

@@ -1,0 +1,6 @@
+# DataGrip
+.idea/
+*.iml
+*.iws
+*.ipr
+dataGenerate
