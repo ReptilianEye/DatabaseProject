@@ -139,21 +139,19 @@ GO
 
 CREATE TABLE [WebinarDetails]
 (
-    [webinarDetailsId] int PRIMARY KEY NOT NULL,
-    [webinarId]        int  UNIQUE        NOT NULL,
+    [webinarId]        int    PRIMARY KEY NOT NULL,
     [title]            nvarchar(255)   NOT NULL,
     [description]      nvarchar(255)   NOT NULL,
     [price]            money           NOT NULL
 )
 GO
-
 CREATE TABLE [Webinars]
 (
-    [webinarId]       int PRIMARY KEY NOT NULL,
+    [webinarId]       int  NOT NULL,
     [onlineMeetingId] int  UNIQUE            NOT NULL
+    PRIMARY KEY ([webinarId], [onlineMeetingId])
 )
 GO
-
 CREATE TABLE [Studies]
 (
     [studiesId]  int PRIMARY KEY NOT NULL,
@@ -182,10 +180,11 @@ CREATE TABLE [Syllabuses]
 (
     [syllabusId] int NOT NULL,
     [subjectId]  int NOT NULL,
-    PRIMARY KEY ([syllabusId], [subjectId])
+    [year]       int NOT NULL
+        check (year > 0),
+    PRIMARY KEY ([syllabusId], [subjectId], [year])
 )
 GO
-
 CREATE TABLE [Exams]
 (
     [examId]    int PRIMARY KEY NOT NULL,
@@ -283,6 +282,7 @@ CREATE TABLE [OfflineMeetings]
     [meetingId] int PRIMARY KEY NOT NULL,
     [moduleId]  int             NOT NULL,
     [place]     nvarchar(255)   NOT NULL
+    [room]      nvarchar(10)   NOT NULL
 )
 GO
 
@@ -331,31 +331,35 @@ CREATE TABLE [Practices]
 (
     [studiesId] int NOT NULL,
     [userId]    int NOT NULL,
+    [startDate] date            NOT NULL,
+    [endDate]   date            NOT NULL,
     PRIMARY KEY ([studiesId], [userId])
 )
 GO
 
 CREATE TABLE [StudiesMeetings]
 (
-    [studiesMeetingId] int PRIMARY KEY NOT NULL,
+    [studiesMeetingId] int  PRIMARY KEY NOT NULL,
     [date]             datetime        NOT NULL,
-    [scheduleId]       int             NOT NULL
+    [scheduleId]       int             NOT NULL,
+    [subjectId]        int             NOT NULL
 )
 GO
-
 CREATE TABLE [OfflineStudiesMeetings]
 (
     [studiesMeetingId] int PRIMARY KEY NOT NULL,
-    [place]            nvarchar(255)   NOT NULL
+    [place]            nvarchar(255)   NOT NULL,
+    [room]             nvarchar(10)   NOT NULL
 )
 GO
 
 CREATE TABLE [OnlineStudiesMeetings]
 (
     [studiesMeetingId] int PRIMARY KEY NOT NULL,
-    [link]             nvarchar(255)   NOT NULL
+    [link]             nvarchar(255)
 )
 GO
+
 
 CREATE TABLE [StudiesAttendance]
 (
@@ -547,25 +551,18 @@ ALTER TABLE [StudiesMeetings]
     ADD FOREIGN KEY ([scheduleId]) REFERENCES [StudiesSchedules] ([scheduleId])
 GO
 
-ALTER TABLE [StudiesMeetings]
-    ADD FOREIGN KEY ([studiesMeetingId]) REFERENCES [OfflineStudiesMeetings] ([studiesMeetingId])
-GO
+alter table [OfflineStudiesMeetings]
+add foreign key ([studiesMeetingId]) references [StudiesMeetings] ([studiesMeetingId])
 
-ALTER TABLE [StudiesMeetings]
-    ADD FOREIGN KEY ([studiesMeetingId]) REFERENCES [OnlineStudiesMeetings] ([studiesMeetingId])
-GO
-
-ALTER TABLE [StudiesAttendance]
-    ADD FOREIGN KEY ([studiesMeetingId]) REFERENCES [OnlineStudiesMeetings] ([studiesMeetingId])
-GO
-
-ALTER TABLE [StudiesAttendance]
-    ADD FOREIGN KEY ([studiesMeetingId]) REFERENCES [OfflineStudiesMeetings] ([studiesMeetingId])
+ALTER TABLE [OnlineStudiesMeetings]
+    ADD FOREIGN KEY ([studiesMeetingId]) REFERENCES [StudiesMeetings] ([studiesMeetingId])
 GO
 
 ALTER TABLE [StudiesAttendance]
     ADD FOREIGN KEY ([userId]) REFERENCES [Users] ([userId])
 GO
+alter TABLE [StudiesAttendance]
+    ADD FOREIGN KEY ([studiesMeetingId]) REFERENCES [StudiesMeetings] ([studiesMeetingId])
 
 ALTER TABLE [Practices]
     ADD FOREIGN KEY ([studiesId]) REFERENCES [Studies] ([studiesId])
@@ -608,9 +605,8 @@ ALTER TABLE [TeachersSubjects]
 GO
 
 
-
-ALTER TABLE [RoleDetails]
-    ADD FOREIGN KEY ([roleId]) REFERENCES [Roles] ([roleId])
+ALTER TABLE [Roles]
+    ADD FOREIGN KEY ([roleId]) REFERENCES [RoleDetails] ([roleId])
 GO
 
 ALTER TABLE [EducationFormPrice]
