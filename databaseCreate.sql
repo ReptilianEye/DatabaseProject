@@ -167,8 +167,8 @@ CREATE TABLE [Students]
 (
     [userId]    int             NOT NULL,
     [studiesId] int             NOT NULL,
-    [year]      int             NOT NULL
-        check (year > 0)
+    [semester]      int             NOT NULL
+        check (semester > 0 and semester < 9)
 )
 alter table [Students]
     add primary key ([userId], [studiesId])
@@ -182,9 +182,9 @@ CREATE TABLE [Syllabuses]
 (
     [syllabusId] int NOT NULL,
     [subjectId]  int NOT NULL,
-    [year]       int NOT NULL
-        check (year > 0),
-    PRIMARY KEY ([syllabusId], [subjectId], [year])
+    [semester]       int NOT NULL
+        check (semester > 0 and semester < 9),
+    PRIMARY KEY ([syllabusId], [subjectId], [semester])
 )
 GO
 CREATE TABLE [Exams]
@@ -225,7 +225,7 @@ CREATE TABLE [Subjects]
     [title]       nvarchar(255)   NOT NULL,
     [description] varchar(1000),
     [ECTS]        int             NOT NULL
-        check (ECTS > 0)
+        check (ECTS > 0 and ECTS <= 30)
 )
 GO
 
@@ -324,8 +324,8 @@ CREATE TABLE [StudiesSchedules]
 (
     [scheduleId] int PRIMARY KEY NOT NULL,
     [studiesId]  int             NOT NULL,
-    [year]       int             NOT NULL
-        check (year > 0)
+    [semester]       int             NOT NULL
+        check (semester > 0 and semester < 9)
 )
 GO
 
