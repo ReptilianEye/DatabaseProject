@@ -144,7 +144,6 @@ select userId,
 from usersCoursesModules UCM
          join OfflineMeetings OM on UCM.moduleId = OM.moduleId
          join Meetings M on OM.meetingId = M.meetingId
-
 union
 select userId,
        courseId,
@@ -221,11 +220,9 @@ select studiesMeetingId, count(userId) as presentStudents
 from StudiesAttendance
 group by studiesMeetingId
 
-
 create view studiesMeetingsPresentEnrolledStudents as
 select SSM.studiesMeetingId, count(SSM.userId) as presentEnrolledStudents
 from studentStudiesMeetings SSM
-         join pastStudies PS on SSM.studiesId = PS.studiesId and SSM.semester = PS.semester
          join StudiesAttendance SA on SSM.studiesMeetingId = SA.studiesMeetingId and SSM.userId = SA.userId
 group by SSM.studiesMeetingId
 
@@ -244,8 +241,7 @@ from StudiesMeetings SM
          join StudiesSchedules SS on SM.scheduleId = SS.scheduleId
          join pastStudies SP on SS.studiesId = SP.studiesId and SS.semester = SP.semester
 
-
-create view FinishedStudiesAttendance as
+create view studiesAttendanceSummary as
 select studiesId,
        semester,
        sum(SMA.presentEnrolledStudents)                   as sumOfEnrolledPresent,
@@ -257,18 +253,17 @@ from studiesMeetingsAttendance SMA
 group by studiesId, semester
 
 
-create view FinishedFormsAttendance as
+create view finishedFormsAttendance as
 (select 'studies'                                         as educationForm,
         name + ', semester: ' + cast(semester as varchar) as title,
         sumOfEnrolledPresent                              as present,
         sumOfEnrolledStudents                             as enrolled,
         avgAttendance,
         sumOfNotEnrolledPresent                           as notEnrolled
- from FinishedStudiesAttendance
-          join Studies on FinishedStudiesAttendance.studiesId = Studies.studiesId)
+ from studiesAttendanceSummary
+          join Studies on studiesAttendanceSummary.studiesId = Studies.studiesId)
 union
 select 'course', C.title + ': ' + M.title, present, enrolledUsers, presentPercent, 0
 from pastCoursesAttendance PCA
          join Courses C on PCA.courseId = C.courseId
          join Modules M on C.courseId = M.courseId and PCA.moduleId = M.moduleId
-
