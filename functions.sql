@@ -77,4 +77,27 @@ BEGIN
         SET @nextId = 1;
     RETURN @nextId;
 END;
-
+CREATE FUNCTION nextRecordingId() RETURNS INT AS
+BEGIN
+    DECLARE @nextId int;
+    SELECT @nextId = MAX(recordingId) + 1 FROM Recordings;
+    IF @nextId IS NULL
+        SET @nextId = 1;
+    RETURN @nextId;
+END;
+CREATE FUNCTION nextPermissionId() RETURNS INT AS
+BEGIN
+    DECLARE @nextId int;
+    SELECT @nextId = MAX(permissionId) + 1 FROM Permissions;
+    IF @nextId IS NULL
+        SET @nextId = 1;
+    RETURN @nextId;
+END;
+CREATE FUNCTION nextExamId() RETURNS INT AS
+BEGIN
+    DECLARE @nextId int;
+    SELECT @nextId = MAX(examId) + 1 FROM Exams;
+    IF @nextId IS NULL
+        SET @nextId = 1;
+    RETURN @nextId;
+END;
