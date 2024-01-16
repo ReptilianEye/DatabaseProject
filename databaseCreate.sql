@@ -275,7 +275,8 @@ GO
 CREATE TABLE [Meetings]
 (
     [meetingId] int PRIMARY KEY NOT NULL IDENTITY (1,1),
-    [date]      datetime        NOT NULL
+    [date]      datetime        NOT NULL,
+    [duration]  int             NOT NULL DEFAULT 60
 )
 GO
 
@@ -287,6 +288,12 @@ CREATE TABLE [OfflineMeetings]
     [room]      nvarchar(10)    NOT NULL
 )
 GO
+CREATE TABLE [Rooms]
+(
+    [roomId] int PRIMARY KEY NOT NULL IDENTITY (1,1),
+    [place]  nvarchar(255)   NOT NULL,
+    [room]   nvarchar(10)    NOT NULL
+)
 
 CREATE TABLE [OnlineMeetings]
 (
@@ -343,6 +350,7 @@ CREATE TABLE [StudiesMeetings]
 (
     [studiesMeetingId] int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [date]             datetime        NOT NULL,
+    [duration]         int             NOT NULL DEFAULT 90,
     [scheduleId]       int             NOT NULL,
     [subjectId]        int             NOT NULL
 )
