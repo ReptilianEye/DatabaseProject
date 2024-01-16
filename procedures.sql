@@ -1,11 +1,11 @@
 BEGIN
     CREATE PROCEDURE AssignTranslatorToEducationForm(@translatorId int, @educationFormId int) AS
     BEGIN
-        IF EXISTS (SELECT * FROM Translators WHERE TranslatorId = @translatorId)
+        IF NOT EXISTS (SELECT * FROM Translators WHERE TranslatorId = @translatorId)
             BEGIN
                 THROW 50000, 'Translator does not exist', 1;
             END
-        IF EXISTS (SELECT * FROM EducationForms WHERE EducationFormId = @educationFormId)
+        IF NOT EXISTS (SELECT * FROM EducationForms WHERE EducationFormId = @educationFormId)
             BEGIN
                 THROW 50000, 'Education form does not exist', 1;
             END

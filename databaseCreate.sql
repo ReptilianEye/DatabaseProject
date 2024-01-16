@@ -1,6 +1,6 @@
 CREATE TABLE [Users]
 (
-    [userId]           int PRIMARY KEY NOT NULL identity(1,1),
+    [userId]           int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [name]             nvarchar(255)   NOT NULL,
     [surname]          nvarchar(255)   NOT NULL,
     [email]            nvarchar(255)   NOT NULL,
@@ -25,14 +25,14 @@ GO
 
 CREATE TABLE [States]
 (
-    [stateId] int PRIMARY KEY NOT NULL,
+    [stateId] int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [state]   nvarchar(255)   NOT NULL
 )
 GO
 
 CREATE TABLE [Cities]
 (
-    [cityId]  int PRIMARY KEY NOT NULL,
+    [cityId]  int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [stateId] int             NOT NULL,
     [city]    nvarchar(255)   NOT NULL
 )
@@ -40,7 +40,7 @@ GO
 
 CREATE TABLE [Streets]
 (
-    [streetId] int PRIMARY KEY NOT NULL,
+    [streetId] int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [cityId]   int             NOT NULL,
     [street]   nvarchar(255)   NOT NULL
 )
@@ -57,7 +57,7 @@ GO
 
 CREATE TABLE [EducationForms]
 (
-    [educationFormId] int PRIMARY KEY NOT NULL identity(1,1),
+    [educationFormId] int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [specificId]      int             NOT NULL,
     [type]            nvarchar(255)   NOT NULL
 )
@@ -90,7 +90,7 @@ ALTER TABLE [Roles]
 
 CREATE TABLE [RoleDetails]
 (
-    [roleId]         int PRIMARY KEY NOT NULL identity(1,1),
+    [roleId]         int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [roleName]       nvarchar(255)   NOT NULL,
     [hierarchyLevel] int             NOT NULL
 )
@@ -98,7 +98,7 @@ GO
 
 CREATE TABLE [Permissions]
 (
-    [permissionId] int PRIMARY KEY NOT NULL identity(1,1),
+    [permissionId] int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [roleId]       int             NOT NULL,
     [permission]   nvarchar(255)   NOT NULL
 )
@@ -113,7 +113,7 @@ GO
 
 CREATE TABLE [AcademicsTitles]
 (
-    [academicTitleId] int PRIMARY KEY NOT NULL identity(1,1),
+    [academicTitleId] int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [academicTitle]   nvarchar(255)   NOT NULL
 )
 GO
@@ -141,7 +141,7 @@ GO
 
 CREATE TABLE [WebinarDetails]
 (
-    [webinarId]   int PRIMARY KEY NOT NULL identity(1,1),
+    [webinarId]   int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [title]       nvarchar(255)   NOT NULL,
     [description] nvarchar(255)   NOT NULL,
     [price]       money           NOT NULL
@@ -149,14 +149,14 @@ CREATE TABLE [WebinarDetails]
 GO
 CREATE TABLE [Webinars]
 (
-    [webinarId]       int        NOT NULL identity(1,1),
+    [webinarId]       int        NOT NULL,
     [onlineMeetingId] int UNIQUE NOT NULL
         PRIMARY KEY ([webinarId], [onlineMeetingId])
 )
 GO
 CREATE TABLE [Studies]
 (
-    [studiesId]  int PRIMARY KEY NOT NULL identity(1,1),
+    [studiesId]  int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [syllabusId] int UNIQUE      NOT NULL,
     [entryFee]   money           NOT NULL,
     [meetFee]    money,
@@ -180,7 +180,7 @@ ALTER TABLE [Students]
 
 CREATE TABLE [Syllabuses]
 (
-    [syllabusId] int NOT NULL identity(1,1),
+    [syllabusId] int NOT NULL IDENTITY (1,1),
     [subjectId]  int NOT NULL,
     [semester]   int NOT NULL
         CHECK (semester > 0 AND semester < 9),
@@ -189,7 +189,7 @@ CREATE TABLE [Syllabuses]
 GO
 CREATE TABLE [Exams]
 (
-    [examId]    int PRIMARY KEY NOT NULL identity(1,1),
+    [examId]    int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [studiesId] int             NOT NULL,
     [subjectId] int             NOT NULL
 )
@@ -265,7 +265,7 @@ CREATE TABLE [HybridModules]
 GO
 CREATE TABLE [WebinarMeetings]
 (
-    [onlineMeetingId] int PRIMARY KEY NOT NULL identity(1,1),
+    [onlineMeetingId] int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [link]            nvarchar(255)   NOT NULL,
     [recordingLink]   nvarchar(255),
     [date]            datetime        NOT NULL
@@ -274,7 +274,7 @@ GO
 
 CREATE TABLE [Meetings]
 (
-    [meetingId] int PRIMARY KEY NOT NULL identity(1,1),
+    [meetingId] int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [date]      datetime        NOT NULL
 )
 GO
@@ -306,7 +306,7 @@ GO
 
 CREATE TABLE [Recordings]
 (
-    [recordingId] int PRIMARY KEY NOT NULL identity(1,1),
+    [recordingId] int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [link]        nvarchar(255)   NOT NULL,
     [moduleId]    int             NOT NULL
 )
@@ -322,7 +322,7 @@ GO
 
 CREATE TABLE [StudiesSchedules]
 (
-    [scheduleId] int PRIMARY KEY NOT NULL identity(1,1),
+    [scheduleId] int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [studiesId]  int             NOT NULL,
     [semester]   int             NOT NULL
         CHECK (semester > 0 AND semester < 9)
@@ -341,7 +341,7 @@ GO
 
 CREATE TABLE [StudiesMeetings]
 (
-    [studiesMeetingId] int PRIMARY KEY NOT NULL identity(1,1),
+    [studiesMeetingId] int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [date]             datetime        NOT NULL,
     [scheduleId]       int             NOT NULL,
     [subjectId]        int             NOT NULL
@@ -373,7 +373,7 @@ GO
 
 CREATE TABLE [EducationFormPrice]
 (
-    [priceId]         int PRIMARY KEY NOT NULL identity(1,1) ,
+    [priceId]         int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [educationFormId] int             NOT NULL,
     [advanceDue]      int             NOT NULL,
     [advance]         money           NOT NULL,
@@ -399,7 +399,7 @@ GO
 
 CREATE TABLE [PaymentsHistory]
 (
-    [paymentId]      int PRIMARY KEY NOT NULL identity(1,1) ,
+    [paymentId]      int PRIMARY KEY NOT NULL IDENTITY (1,1),
     [userId]         int             NOT NULL,
     [paymentDate]    datetime        NOT NULL,
     [payedFor]       int             NOT NULL,
