@@ -64,15 +64,15 @@ CREATE TABLE [EducationForms]
 CREATE UNIQUE NONCLUSTERED INDEX SPECIFIC_EDUCATION_FORM
     ON [EducationForms] (specificId, type);
 GO
-CREATE TABLE [Card](
+CREATE TABLE Cart(
     [userId] int NOT NULL,
     [educationFormId] int NOT NULL,
     [addedDate] datetime NOT NULL DEFAULT GETDATE(),
     PRIMARY KEY ([userId], [educationFormId])
 )
-alter TABLE [Card]
+alter TABLE Cart
     ADD FOREIGN KEY ([userId]) REFERENCES [Users] ([userId])
-ALTER TABLE [Card]
+ALTER TABLE Cart
     ADD FOREIGN KEY ([educationFormId]) REFERENCES [EducationForms] ([educationFormId])
 CREATE TABLE [EducationFormsTranslators]
 (
@@ -397,13 +397,12 @@ CREATE TABLE [EducationFormPrice]
     [advanceDue]      int             NOT NULL,
     [advance]         money           NOT NULL,
     [wholePrice]      money           NOT NULL,
-    [accessFor]       int,
+    [accessFor]       int DEFAULT 5*365 NOT NULL,
     CHECK (advance >= 0),
     CHECK (advance <= wholePrice),
     CHECK (accessFor > 0),
 )
 GO
-
 CREATE TABLE [EducationFormPaymentsDue]
 (
     [educationFormId] int PRIMARY KEY NOT NULL,

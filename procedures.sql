@@ -389,62 +389,138 @@ BEGIN
             VALUES (@examId, @userId, @grade)
     END
 END
+BEGIN
+    CREATE PROCEDURE AddToCart(@userId int, @specificId int, @type varchar(50)) AS
+    BEGIN
+        IF NOT EXISTS (SELECT *
+                       FROM Users
+                       WHERE userId = @userId)
+            BEGIN
+                THROW 50000, 'User does not exist', 1;
+            END
+        IF @type NOT IN ('course', 'webinar')
+            BEGIN
+                THROW 50000, 'Invalid type', 1;
+            END
+        DECLARE @educationFormId int = (SELECT educationFormId
+                                        FROM EducationForms
+                                        WHERE specificId = @specificId
+                                          AND type = @type)
+        IF @educationFormId IS NULL
+            BEGIN
+                THROW 50000, 'Education form does not exist', 1;
+            END
+        IF EXISTS (SELECT *
+                   FROM Cart
+                   WHERE userId = @userId
+                     AND educationFormId = @educationFormId)
+            BEGIN
+                THROW 50000, 'User already has the education form in cart', 1;
+            END
+        IF EXISTS (SELECT * FROM AssignedEducationForms WHERE userId = @userId AND educationFormId = @educationFormId)
+            BEGIN
+                THROW 50000, 'User already has access to that education form', 1;
+            END
+        INSERT INTO Cart (userId, educationFormId) VALUES (@userId, @educationFormId)
+    END
+END
+BEGIN
+    CREATE PROCEDURE RemoveFromCart(@userId int, @educationFormId int) AS
+    BEGIN
+        IF NOT EXISTS (SELECT *
+                       FROM Users
+                       WHERE userId = @userId)
+            BEGIN
+                THROW 50000, 'User does not exist', 1;
+            END
+        IF NOT EXISTS (SELECT *
+                       FROM EducationForms
+                       WHERE educationFormId = @educationFormId)
+            BEGIN
+                THROW 50000, 'Education form does not exist', 1;
+            END
+        IF NOT EXISTS (SELECT *
+                       FROM Cart
+                       WHERE userId = @userId
+                         AND educationFormId = @educationFormId)
+            BEGIN
+                THROW 50000, 'User does not have the education form in cart', 1;
+            END
+        DELETE
+        FROM Cart
+        WHERE userId = @userId
+          AND educationFormId = @educationFormId
+    END
+END
+BEGIN
+    CREATE PROCEDURE ClearCart(@userId int) AS
+    BEGIN
+        IF NOT EXISTS (SELECT *
+                       FROM Users
+                       WHERE userId = @userId)
+            BEGIN
+                THROW 50000, 'User does not exist', 1;
+            END
+        IF NOT EXISTS(SELECT * FROM Cart WHERE userId = @userId)
+            BEGIN
+                THROW 50000, 'User does not have any education forms in cart', 1;
+            END
+        DELETE
+        FROM Cart
+        WHERE userId = @userId
+    END
+END
+BEGIN
+    CREATE PROCEDURE AssignEducationFormToUser(@userId int, @educationFormId int) AS
+    BEGIN
+        IF NOT EXISTS (SELECT *
+                       FROM Users
+                       WHERE userId = @userId)
+            BEGIN
+                THROW 50000, 'User does not exist', 1;
+            END
+        IF NOT EXISTS (SELECT *
+                       FROM EducationForms
+                       WHERE educationFormId = @educationFormId)
+            BEGIN
+                THROW 50000, 'Education form does not exist', 1;
+            END
+        IF EXISTS (SELECT *
+                   FROM AssignedEducationForms
+                   WHERE userId = @userId
+                     AND educationFormId = @educationFormId)
+            BEGIN
+                THROW 50000, 'User already has access to that education form', 1;
+            END
+        DECLARE @accessFor INT = (SELECT accessFor
+                                  FROM EducationFormPrice
+                                  WHERE educationFormId = @educationFormId)
+        DECLARE @accessUntil date = DATEADD(DAY, @accessFor, dbo.getEducationFormEndDate(@educationFormId))
+        INSERT INTO AssignedEducationForms (userId, educationFormId, accessUntil)
+        VALUES (@userId, @educationFormId, @accessUntil)
+    END
+END
+BEGIN
+    CREATE PROCEDURE FinalizeCart(@userId int) AS
+    BEGIN
+        DECLARE @userCart userCart
+        INSERT INTO @userCart
+        SELECT *
+        FROM dbo.getCartForUser(@userId)
+        DECLARE @educationFormId int
+        DECLARE cart_cursor CURSOR FOR SELECT educationFormId FROM @userCart
+        OPEN cart_cursor
+        FETCH NEXT FROM cart_cursor INTO @educationFormId
+        WHILE @@FETCH_STATUS = 0
+            BEGIN
+                EXEC AssignEducationFormToUser @userId, @educationFormId
+                FETCH NEXT FROM cart_cursor INTO @educationFormId
+            END
+        EXEC ClearCart @userId
+        CLOSE cart_cursor
+        DEALLOCATE cart_cursor
+    END
+END
 
-
-DELETE
-FROM EducationForms
-WHERE specificId = 1004
-  AND type = 'course'
-EXEC CreateCourse 'test', 10, 100, '2025-01-01', 10, 10, 10
-SELECT title, courseId, slotsLimit, wholePrice, advance, accessFor
-FROM Courses
-         JOIN EducationForms ON Courses.courseId = EducationForms.specificId AND type = 'course'
-         JOIN EducationFormPrice ON EducationForms.educationFormId = EducationFormPrice.educationFormId
-WHERE title = 'test'
-EXEC CreateModule 'test2', 1101, 'stationary'
-SELECT *
-FROM Modules
-WHERE title = 'test2'
-SELECT *
-FROM StationaryModules
-WHERE moduleId = 301
-EXEC SaveOfflineMeeting 301, '2025-01-01 15:00:00', 100, 'test', 'test'
-EXEC SaveOfflineMeeting 301, '2025-01-01 15:30:00', 100, 'test', 'test'
-
-DELETE
-FROM OfflineMeetings
-WHERE moduleId = 301
-DELETE
-FROM Meetings
-WHERE meetingId = 712
-DELETE
-FROM StationaryModules
-WHERE moduleId = 301
-DELETE
-FROM Modules
-WHERE moduleId = 301
-DELETE
-FROM Courses
-WHERE courseId = 1101
-
--- select * from Courses where title ='test'
-DELETE
-FROM EducationForms
-WHERE specificId = 1101
-  AND type = 'Course'
-DELETE
-FROM Courses
-WHERE title = 'test'
-DELETE
-FROM Modules
-WHERE title = 'test2'
-SELECT *
-FROM Modules
-WHERE title = 'test2'
-DELETE
-FROM StationaryModules
-WHERE moduleId = 301
--- EXEC CreateModule 'test2', 1101, 'stationary'
--- EXEC CreateEducationForm 1101, 'Course'
 
 

@@ -176,46 +176,37 @@ BEGIN
     RETURN @nextId;
 END;
 CREATE FUNCTION studentsWhichDidntFulfillPractices(@studiesId int)
-    RETURNS TABLE as return
-            (
-                SELECT S.userId, COUNT(*) AS practicesCount
-                FROM Students S
-                         JOIN Practices P ON S.userId = P.userId AND P.studiesId = @studiesId
-                WHERE S.studiesId = @studiesId
-                GROUP BY S.userId
-                HAVING COUNT(*) < 2
-            )
+    RETURNS TABLE as return(SELECT S.userId, COUNT(*) AS practicesCount
+                            FROM Students S
+                                     JOIN Practices P ON S.userId = P.userId AND P.studiesId = @studiesId
+                            WHERE S.studiesId = @studiesId
+                            GROUP BY S.userId
+                            HAVING COUNT(*) < 2)
 -- SELECT * from dbo.studentsWhichDidntFulfillPractices(4)
 
 CREATE FUNCTION getStudentGrades(@userId int, @studiesId int)
-    RETURNS TABLE RETURN
-            (
-                SELECT name AS studiesName, title AS subjectTitle, grade
-                FROM StudentsGrades SG
-                         JOIN Exams E ON SG.examId = E.examId
-                         JOIN Grades G ON SG.gradeId = G.gradeId
-                         JOIN Subjects S ON E.subjectId = S.subjectId
-                         JOIN Studies ST ON E.studiesId = ST.studiesId
-                WHERE SG.userId = @userId
-                  AND (@studiesId IS NULL OR E.studiesId = @studiesId)
-            )
+    RETURNS TABLE RETURN(SELECT name AS studiesName, title AS subjectTitle, grade
+                         FROM StudentsGrades SG
+                                  JOIN Exams E ON SG.examId = E.examId
+                                  JOIN Grades G ON SG.gradeId = G.gradeId
+                                  JOIN Subjects S ON E.subjectId = S.subjectId
+                                  JOIN Studies ST ON E.studiesId = ST.studiesId
+                         WHERE SG.userId = @userId
+                           AND (@studiesId IS NULL OR E.studiesId = @studiesId))
 
 -- SELECT * FROM dbo.getStudentGrades(8, NULL)
 -- SELECT * FROM dbo.getStudentGrades(8, 1)
 
 CREATE FUNCTION getUnwatchedRecording(@userId int, @courseId int)
-    RETURNS TABLE RETURN
-            (
-                SELECT recordingId, C.title AS courseTitle, M.title AS moduleTitle
-                FROM AssignedEducationForms AEF
-                         JOIN EducationForms EF ON AEF.educationFormId = EF.educationFormId
-                         JOIN Courses C ON EF.specificId = C.courseId AND type = 'course'
-                         JOIN Modules M ON C.courseId = M.courseId
-                         JOIN Recordings R ON M.moduleId = R.moduleId
-                WHERE userId NOT IN (SELECT userId FROM WatchedBy WHERE recordingId = R.recordingId)
-                  AND AEF.userId = @userId
-                  AND (@courseId IS NULL OR C.courseId = @courseId)
-            )
+    RETURNS TABLE RETURN(SELECT recordingId, C.title AS courseTitle, M.title AS moduleTitle
+                         FROM AssignedEducationForms AEF
+                                  JOIN EducationForms EF ON AEF.educationFormId = EF.educationFormId
+                                  JOIN Courses C ON EF.specificId = C.courseId AND type = 'course'
+                                  JOIN Modules M ON C.courseId = M.courseId
+                                  JOIN Recordings R ON M.moduleId = R.moduleId
+                         WHERE userId NOT IN (SELECT userId FROM WatchedBy WHERE recordingId = R.recordingId)
+                           AND AEF.userId = @userId
+                           AND (@courseId IS NULL OR C.courseId = @courseId))
 
 -- SELECT *
 -- FROM dbo.getUnwatchedRecording(35, NULL)
@@ -245,29 +236,26 @@ END
 
 
 CREATE FUNCTION upcomingEducationFormForUser(@userId int)
-    RETURNS TABLE RETURN
-            (
-                WITH T AS (SELECT title, 'course' AS type, startDate
-                           FROM Courses C
-                                    JOIN upcomingCourses UC ON C.courseId = UC.courseId
-                                    JOIN coursesStartEnd CSE ON C.courseId = CSE.courseId
-                                    JOIN EducationForms EF ON C.courseId = EF.specificId AND EF.type = 'course'
-                                    JOIN AssignedEducationForms AEF ON EF.educationFormId = AEF.educationFormId
-                           WHERE userId = @userId
-                           UNION
-                           SELECT title, 'webinar' AS type, date AS startDate
-                           FROM Webinars W
-                                    JOIN upcomingWebinars UW ON W.webinarId = UW.webinarId
-                                    JOIN WebinarDetails WD ON W.webinarId = WD.webinarId
-                                    JOIN WebinarMeetings WM ON W.onlineMeetingId = WM.onlineMeetingId
-                                    JOIN EducationForms EF ON W.webinarId = EF.specificId AND EF.type = 'webinar'
-                                    JOIN AssignedEducationForms AEF ON EF.educationFormId = AEF.educationFormId
-                           WHERE userId = @userId)
-                SELECT title,
-                       type,
-                       startDate
-                FROM T
-            )
+    RETURNS TABLE RETURN(WITH T AS (SELECT title, 'course' AS type, startDate
+                                    FROM Courses C
+                                             JOIN upcomingCourses UC ON C.courseId = UC.courseId
+                                             JOIN coursesStartEnd CSE ON C.courseId = CSE.courseId
+                                             JOIN EducationForms EF ON C.courseId = EF.specificId AND EF.type = 'course'
+                                             JOIN AssignedEducationForms AEF ON EF.educationFormId = AEF.educationFormId
+                                    WHERE userId = @userId
+                                    UNION
+                                    SELECT title, 'webinar' AS type, date AS startDate
+                                    FROM Webinars W
+                                             JOIN upcomingWebinars UW ON W.webinarId = UW.webinarId
+                                             JOIN WebinarDetails WD ON W.webinarId = WD.webinarId
+                                             JOIN WebinarMeetings WM ON W.onlineMeetingId = WM.onlineMeetingId
+                                             JOIN EducationForms EF ON W.webinarId = EF.specificId AND EF.type = 'webinar'
+                                             JOIN AssignedEducationForms AEF ON EF.educationFormId = AEF.educationFormId
+                                    WHERE userId = @userId)
+                         SELECT title,
+                                type,
+                                startDate
+                         FROM T)
 -- SELECT * FROM dbo.upcomingEducationFormForUser(15)
 
 CREATE FUNCTION doesDatesOverlap(@date1 date, @startTime1 time, @endTime1 time, @date2 date, @startTime2 time,
@@ -285,27 +273,58 @@ BEGIN
     RETURN @overlap
 END
 CREATE FUNCTION emptyRooms(@date date, @startTime time, @endTime time)
-    RETURNS TABLE RETURN
-            (
-                SELECT place, room
-                FROM Rooms R
-                WHERE R.room NOT IN (SELECT OM.room
-                                     FROM OfflineMeetings OM
-                                              JOIN Meetings M ON OM.meetingId = M.meetingId
-                                     WHERE dbo.doesDatesOverlap(@date, @startTime, @endTime, date, date,
-                                                                DATEADD(MINUTE, duration, date)) = 1
-                                     UNION
-                                     SELECT room
-                                     FROM OfflineStudiesMeetings OSM
-                                              JOIN StudiesMeetings SM ON OSM.studiesMeetingId = SM.studiesMeetingId
-                                     WHERE dbo.doesDatesOverlap(@date, @startTime, @endTime, date, date,
-                                                                DATEADD(MINUTE, duration, date)) = 1)
-            )
-
--- SELECT *
--- FROM dbo.emptyRooms('2023-07-25', '19:00', '20:00')
--- WHERE room='3'
--- SELECT * from OfflineStudiesMeetings
--- join dbo.StudiesMeetings SM ON OfflineStudiesMeetings.studiesMeetingId = SM.studiesMeetingId
--- WHERE cast(date as date)  ='2023-07-25'
-
+    RETURNS TABLE RETURN(SELECT place, room
+                         FROM Rooms R
+                         WHERE R.room NOT IN (SELECT OM.room
+                                              FROM OfflineMeetings OM
+                                                       JOIN Meetings M ON OM.meetingId = M.meetingId
+                                              WHERE dbo.doesDatesOverlap(@date, @startTime, @endTime, date, date,
+                                                                         DATEADD(MINUTE, duration, date)) = 1
+                                              UNION
+                                              SELECT room
+                                              FROM OfflineStudiesMeetings OSM
+                                                       JOIN StudiesMeetings SM ON OSM.studiesMeetingId = SM.studiesMeetingId
+                                              WHERE dbo.doesDatesOverlap(@date, @startTime, @endTime, date, date,
+                                                                         DATEADD(MINUTE, duration, date)) = 1))
+CREATE FUNCTION getCartForUser(@userId int)
+    RETURNS TABLE RETURN(WITH educationFormsWithPrices
+                                  AS (SELECT EF.educationFormId, specificId, type, advance, advanceDue, wholePrice
+                                      FROM Cart C
+                                               JOIN EducationForms EF ON C.educationFormId = EF.educationFormId
+                                               JOIN EducationFormPrice EFP ON EF.educationFormId = EFP.educationFormId
+                                      WHERE userId = @userId)
+                         SELECT educationFormId, specificId, title, type, advance, advanceDue, wholePrice
+                         FROM educationFormsWithPrices EFP
+                                  JOIN Courses CO ON EFP.specificId = CO.courseId AND EFP.type = 'course'
+                         UNION
+                         SELECT educationFormId, specificId, title, type, advance, advanceDue, wholePrice
+                         FROM educationFormsWithPrices EFP
+                                  JOIN Webinars W ON EFP.specificId = W.webinarId AND EFP.type = 'webinar'
+                                  JOIN WebinarDetails WD ON W.webinarId = WD.webinarId)
+CREATE FUNCTION getEducationFormEndDate(@educationFormId int) RETURNS date AS
+BEGIN
+    DECLARE @type varchar(255) = (SELECT type
+                                  FROM EducationForms
+                                  WHERE educationFormId = @educationFormId)
+    DECLARE @specificId int = (SELECT specificId
+                               FROM EducationForms
+                               WHERE educationFormId = @educationFormId)
+    IF @specificId IS NULL
+        RETURN NULL
+    IF @type = 'course'
+        RETURN (SELECT finishDate
+                FROM coursesStartEnd
+                WHERE courseId = @specificId)
+    IF @type = 'webinar'
+        RETURN (SELECT date
+                FROM Webinars W
+                         JOIN WebinarMeetings WM ON W.onlineMeetingId = WM.onlineMeetingId
+                WHERE W.webinarId = @specificId)
+    RETURN NULL
+END
+CREATE FUNCTION generatePaymentLink(@userId int) RETURNS varchar(255) AS
+BEGIN
+    DECLARE @paymentLink varchar(255) = 'https://www.paypal.com/paypalme/edusystem/'
+    SELECT @paymentLink = @paymentLink + CAST(SUM(wholePrice) AS varchar(255)) FROM dbo.getCartForUser(@userId)
+    RETURN @paymentLink
+END
