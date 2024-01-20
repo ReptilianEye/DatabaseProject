@@ -64,6 +64,16 @@ CREATE TABLE [EducationForms]
 CREATE UNIQUE NONCLUSTERED INDEX SPECIFIC_EDUCATION_FORM
     ON [EducationForms] (specificId, type);
 GO
+CREATE TABLE [Card](
+    [userId] int NOT NULL,
+    [educationFormId] int NOT NULL,
+    [addedDate] datetime NOT NULL DEFAULT GETDATE(),
+    PRIMARY KEY ([userId], [educationFormId])
+)
+alter TABLE [Card]
+    ADD FOREIGN KEY ([userId]) REFERENCES [Users] ([userId])
+ALTER TABLE [Card]
+    ADD FOREIGN KEY ([educationFormId]) REFERENCES [EducationForms] ([educationFormId])
 CREATE TABLE [EducationFormsTranslators]
 (
     [educationFormId] int NOT NULL,

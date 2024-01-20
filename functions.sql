@@ -186,6 +186,7 @@ CREATE FUNCTION studentsWhichDidntFulfillPractices(@studiesId int)
                 HAVING COUNT(*) < 2
             )
 -- SELECT * from dbo.studentsWhichDidntFulfillPractices(4)
+
 CREATE FUNCTION getStudentGrades(@userId int, @studiesId int)
     RETURNS TABLE RETURN
             (
@@ -231,6 +232,14 @@ BEGIN
     DECLARE @slotsLimit int
     SELECT @slotsLimit = slotsLimit FROM Courses WHERE courseId = @courseId
     RETURN @slotsLimit - @enrolledUsers
+END
+CREATE FUNCTION canJoinCourse(@courseId int) RETURNS bit AS
+BEGIN
+    DECLARE @freeSlots int
+    SELECT @freeSlots = dbo.getFreeSlots(@courseId)
+    IF @freeSlots > 0
+        RETURN 1
+    RETURN 0
 END
 -- SELECT dbo.getFreeSlots(1002) AS freeSlots
 

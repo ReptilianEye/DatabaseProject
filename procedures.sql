@@ -16,22 +16,27 @@ BEGIN
 END
 
 BEGIN
-    CREATE PROCEDURE CreateEducationForm(@specificId int, @type nvarchar(50)) AS
+    CREATE PROCEDURE CreateEducationForm(@specificId int, @type nvarchar(50), @price money, @wholePriceDueDate date,
+                                         @advanceDueDays int, @advance money, @accessFor int) AS
     BEGIN
+        DECLARE @educationFormId int = dbo.nextEducationFormId()
         INSERT INTO EducationForms (educationFormId, specificId, type)
-        VALUES (dbo.nextEducationFormId(), @specificId, @type)
+        VALUES (@educationFormId, @specificId, @type)
+        EXEC AddEducationFormPaymentsDetails @educationFormId, @advanceDueDays, @advance, @price, @accessFor,
+             @wholePriceDueDate
     END
 END
-
 BEGIN
-    CREATE PROCEDURE CreateCourse(@title nvarchar(50), @slotsLimit int) AS
+    CREATE PROCEDURE CreateCourse(@title nvarchar(50), @slotsLimit int, @price money, @wholePriceDueDate datetime,
+                                  @advanceDueDays int, @advance money, @accessFor int) AS
     BEGIN
         DECLARE @courseId int = dbo.nextCourseId()
 
         INSERT INTO Courses (courseId, title, slotsLimit)
-        VALUES (courseId, @title, @slotsLimit)
+        VALUES (9999, @title, @slotsLimit)
 
-        EXEC CreateEducationForm @courseId, 'Course'
+        EXEC CreateEducationForm 9999, 'Course', @price, @wholePriceDueDate, @advanceDueDays, @advance,
+             @accessFor
     END
 END
 BEGIN
@@ -46,7 +51,7 @@ BEGIN
             END
     DECLARE @moduleId int = dbo.nextCourseModuleId()
     INSERT INTO Modules (moduleId, title, courseId)
-    VALUES (moduleId, @title, @courseId)
+    VALUES (@moduleId, @title, @courseId)
         IF @type = 'stationary'
             BEGIN
                 INSERT INTO StationaryModules (moduleId) VALUES (@moduleId)
@@ -93,33 +98,51 @@ BEGIN
     END
 END
 BEGIN
-    CREATE PROCEDURE SaveOfflineMeeting(@moduleId int, @date datetime, @place varchar(255), @room varchar(20)) AS
+    CREATE PROCEDURE SaveOfflineMeeting(@moduleId int, @date datetime, @duration int, @place varchar(255),
+                                        @room varchar(20)) AS
     BEGIN
         IF NOT EXISTS (SELECT * FROM Modules WHERE moduleId = @moduleId)
             BEGIN
                 THROW 50000, 'Module does not exist', 1;
             END
-        IF NOT EXISTS (SELECT * FROM StationaryModules WHERE moduleId = @moduleId) OR
+        IF NOT EXISTS (SELECT * FROM StationaryModules WHERE moduleId = @moduleId) AND
            NOT EXISTS (SELECT * FROM HybridModules WHERE moduleId = @moduleId)
             BEGIN
                 THROW 50000, 'Module is not stationary or hybrid', 1;
             END
+        IF (SELECT COUNT(*)
+            FROM Meetings M
+                     JOIN OfflineMeetings OM ON M.meetingId = OM.meetingId
+            WHERE dbo.doesDatesOverlap(M.date, M.date, DATEADD(MINUTE, duration, M.date), @date, @date,
+                                       DATEADD(MINUTE, @duration, @date)) = 1) > 0
+            BEGIN
+                THROW 50000, 'Meeting overlaps with another meeting', 1;
+            END
+
         DECLARE @meetingId int = dbo.nextMeetingId()
-        INSERT INTO Meetings (meetingId, date) VALUES (@meetingId, @date)
+        INSERT INTO Meetings (meetingId, date, duration) VALUES (@meetingId, @date, @duration)
         INSERT INTO OfflineMeetings (meetingId, moduleId, place, room)
         VALUES (@meetingId, @moduleId, @place, @room)
     END
 END
 BEGIN
-    CREATE PROCEDURE SaveOnlineMeeting(@moduleId int, @date datetime, @link varchar(255)) AS
+    CREATE PROCEDURE SaveOnlineMeeting(@moduleId int, @date datetime, @duration int, @link varchar(255)) AS
         IF NOT EXISTS (SELECT * FROM Modules WHERE moduleId = @moduleId)
             BEGIN
                 THROW 50000, 'Module does not exist', 1;
             END
-        IF NOT EXISTS (SELECT * FROM OnlineSyncModules WHERE moduleId = @moduleId) OR
+        IF NOT EXISTS (SELECT * FROM OnlineSyncModules WHERE moduleId = @moduleId) AND
            NOT EXISTS (SELECT * FROM HybridModules WHERE moduleId = @moduleId)
             BEGIN
                 THROW 50000, 'Module is not onlineSync or hybrid', 1;
+            END
+        IF (SELECT COUNT(*)
+            FROM Meetings M
+                     JOIN OfflineMeetings OM ON M.meetingId = OM.meetingId
+            WHERE dbo.doesDatesOverlap(M.date, M.date, DATEADD(MINUTE, duration, M.date), @date, @date,
+                                       DATEADD(MINUTE, @duration, @date)) = 1) > 0
+            BEGIN
+                THROW 50000, 'Meeting overlaps with another meeting', 1;
             END
     DECLARE @meetingId int = dbo.nextMeetingId()
     INSERT INTO Meetings (meetingId, date) VALUES (@meetingId, @date)
@@ -198,7 +221,8 @@ BEGIN
     END
 END
 BEGIN
-    CREATE PROCEDURE CreateWebinar(@link varchar(255), @recordingLink varchar(255), @date datetime, @title nvarchar(50),
+    CREATE PROCEDURE CreateWebinar(@link varchar(255), @recordingLink varchar(255), @date datetime,
+                                   @title nvarchar(50),
                                    @description varchar(255), @price money, @detailsId int=NULL) AS
     BEGIN
         DECLARE @meetingId int = dbo.nextWebinarMeetingId()
@@ -365,3 +389,62 @@ BEGIN
             VALUES (@examId, @userId, @grade)
     END
 END
+
+
+DELETE
+FROM EducationForms
+WHERE specificId = 1004
+  AND type = 'course'
+EXEC CreateCourse 'test', 10, 100, '2025-01-01', 10, 10, 10
+SELECT title, courseId, slotsLimit, wholePrice, advance, accessFor
+FROM Courses
+         JOIN EducationForms ON Courses.courseId = EducationForms.specificId AND type = 'course'
+         JOIN EducationFormPrice ON EducationForms.educationFormId = EducationFormPrice.educationFormId
+WHERE title = 'test'
+EXEC CreateModule 'test2', 1101, 'stationary'
+SELECT *
+FROM Modules
+WHERE title = 'test2'
+SELECT *
+FROM StationaryModules
+WHERE moduleId = 301
+EXEC SaveOfflineMeeting 301, '2025-01-01 15:00:00', 100, 'test', 'test'
+EXEC SaveOfflineMeeting 301, '2025-01-01 15:30:00', 100, 'test', 'test'
+
+DELETE
+FROM OfflineMeetings
+WHERE moduleId = 301
+DELETE
+FROM Meetings
+WHERE meetingId = 712
+DELETE
+FROM StationaryModules
+WHERE moduleId = 301
+DELETE
+FROM Modules
+WHERE moduleId = 301
+DELETE
+FROM Courses
+WHERE courseId = 1101
+
+-- select * from Courses where title ='test'
+DELETE
+FROM EducationForms
+WHERE specificId = 1101
+  AND type = 'Course'
+DELETE
+FROM Courses
+WHERE title = 'test'
+DELETE
+FROM Modules
+WHERE title = 'test2'
+SELECT *
+FROM Modules
+WHERE title = 'test2'
+DELETE
+FROM StationaryModules
+WHERE moduleId = 301
+-- EXEC CreateModule 'test2', 1101, 'stationary'
+-- EXEC CreateEducationForm 1101, 'Course'
+
+
