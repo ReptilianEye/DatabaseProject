@@ -255,7 +255,7 @@ group by studiesId, semester
 
 create view finishedFormsAttendance as
 (select 'studies'                                         as educationForm,
-        name + ', semester: ' + cast(semester as varchar) as title,
+        title + ', semester: ' + cast(semester as varchar) as title,
         sumOfEnrolledPresent                              as present,
         sumOfEnrolledStudents                             as enrolled,
         avgAttendance,

@@ -185,7 +185,7 @@ CREATE FUNCTION studentsWhichDidntFulfillPractices(@studiesId int)
 -- SELECT * from dbo.studentsWhichDidntFulfillPractices(4)
 
 CREATE FUNCTION getStudentGrades(@userId int, @studiesId int)
-    RETURNS TABLE RETURN(SELECT name AS studiesName, title AS subjectTitle, grade
+    RETURNS TABLE RETURN(SELECT title AS studiesName, title AS subjectTitle, grade
                          FROM StudentsGrades SG
                                   JOIN Exams E ON SG.examId = E.examId
                                   JOIN Grades G ON SG.gradeId = G.gradeId
@@ -210,15 +210,14 @@ CREATE FUNCTION getUnwatchedRecording(@userId int, @courseId int)
 
 -- SELECT *
 -- FROM dbo.getUnwatchedRecording(35, NULL)
-
-CREATE FUNCTION getFreeSlots(@courseId int) RETURNS int AS
+CREATE FUNCTION getFreeCourseSlots(@courseId int) RETURNS int AS
 BEGIN
     DECLARE @enrolledUsers int
     SELECT @enrolledUsers = COUNT(userId)
     FROM Courses C
              JOIN EducationForms EF ON C.courseId = EF.specificId AND EF.type = 'course'
              JOIN AssignedEducationForms AEF ON EF.educationFormId = AEF.educationFormId
-    WHERE courseId = 1002
+    WHERE courseId = @courseId
     GROUP BY EF.educationFormId
     DECLARE @slotsLimit int
     SELECT @slotsLimit = slotsLimit FROM Courses WHERE courseId = @courseId
@@ -227,13 +226,31 @@ END
 CREATE FUNCTION canJoinCourse(@courseId int) RETURNS bit AS
 BEGIN
     DECLARE @freeSlots int
-    SELECT @freeSlots = dbo.getFreeSlots(@courseId)
+    SELECT @freeSlots = dbo.getFreeCourseSlots(@courseId)
     IF @freeSlots > 0
         RETURN 1
     RETURN 0
 END
--- SELECT dbo.getFreeSlots(1002) AS freeSlots
 
+CREATE FUNCTION getFreeStudiesSlots(@studiesId int) RETURNS int AS
+BEGIN
+    DECLARE @enrolledUsers int
+    SELECT @enrolledUsers = COUNT(userId)
+    FROM AwaitingStudents
+    WHERE studiesId = @studiesId
+    DECLARE @slotsLimit int
+    SELECT @slotsLimit = slotsLimit FROM Studies WHERE studiesId = @studiesId
+    RETURN @slotsLimit - @enrolledUsers
+END
+
+CREATE FUNCTION canJoinStudies(@studiesId int) RETURNS bit AS
+BEGIN
+    DECLARE @freeSlots int
+    SELECT @freeSlots = dbo.getFreeStudiesSlots(@studiesId)
+    IF @freeSlots > 0
+        RETURN 1
+    RETURN 0
+END
 
 CREATE FUNCTION upcomingEducationFormForUser(@userId int)
     RETURNS TABLE RETURN(WITH T AS (SELECT title, 'course' AS type, startDate
@@ -247,7 +264,7 @@ CREATE FUNCTION upcomingEducationFormForUser(@userId int)
                                     SELECT title, 'webinar' AS type, date AS startDate
                                     FROM Webinars W
                                              JOIN upcomingWebinars UW ON W.webinarId = UW.webinarId
-                                             JOIN WebinarDetails WD ON W.webinarId = WD.webinarId
+                                             JOIN WebinarDetails WD ON W.webinarId = WD.webinarDetailsId
                                              JOIN WebinarMeetings WM ON W.onlineMeetingId = WM.onlineMeetingId
                                              JOIN EducationForms EF ON W.webinarId = EF.specificId AND EF.type = 'webinar'
                                              JOIN AssignedEducationForms AEF ON EF.educationFormId = AEF.educationFormId
@@ -300,7 +317,7 @@ CREATE FUNCTION getCartForUser(@userId int)
                          SELECT educationFormId, specificId, title, type, advance, advanceDue, wholePrice
                          FROM educationFormsWithPrices EFP
                                   JOIN Webinars W ON EFP.specificId = W.webinarId AND EFP.type = 'webinar'
-                                  JOIN WebinarDetails WD ON W.webinarId = WD.webinarId)
+                                  JOIN WebinarDetails WD ON W.webinarId = WD.webinarDetailsId)
 CREATE FUNCTION getEducationFormEndDate(@educationFormId int) RETURNS date AS
 BEGIN
     DECLARE @type varchar(255) = (SELECT type
@@ -324,7 +341,42 @@ BEGIN
 END
 CREATE FUNCTION generatePaymentLink(@userId int) RETURNS varchar(255) AS
 BEGIN
+    DECLARE @userCart userCart
+    INSERT INTO @userCart
+    SELECT *
+    FROM dbo.getCartForUser(@userId)
+    DECLARE @educationFormId int
+    DECLARE cart_cursor CURSOR FOR SELECT educationFormId FROM @userCart
+    OPEN cart_cursor
+    FETCH NEXT FROM cart_cursor INTO @educationFormId
+    WHILE @@FETCH_STATUS = 0
+        BEGIN
+            IF dbo.areFreeSlotsAvailable(@educationFormId) = 0
+                THROW 50000, 'There are no free slots available for one of the education forms in your cart', 1
+            FETCH NEXT FROM cart_cursor INTO @educationFormId
+        END
+    CLOSE cart_cursor
+    DEALLOCATE cart_cursor
     DECLARE @paymentLink varchar(255) = 'https://www.paypal.com/paypalme/edusystem/'
     SELECT @paymentLink = @paymentLink + CAST(SUM(wholePrice) AS varchar(255)) FROM dbo.getCartForUser(@userId)
     RETURN @paymentLink
 END
+
+CREATE FUNCTION areFreeSlotsAvailable(@educationFormId int) RETURNS bit AS
+BEGIN
+    DECLARE @type varchar(255) = (SELECT type
+                                  FROM EducationForms
+                                  WHERE educationFormId = @educationFormId)
+    DECLARE @specificId int = (SELECT specificId
+                               FROM EducationForms
+                               WHERE educationFormId = @educationFormId)
+    IF @type = 'course'
+        RETURN (SELECT dbo.canJoinCourse(@specificId))
+    IF @type = 'webinar'
+        RETURN (SELECT dbo.canJoinStudies(@specificId))
+    RETURN 1
+END
+
+
+
+

@@ -33,9 +33,9 @@ BEGIN
         DECLARE @courseId int = dbo.nextCourseId()
 
         INSERT INTO Courses (courseId, title, slotsLimit)
-        VALUES (9999, @title, @slotsLimit)
+        VALUES (@courseId, @title, @slotsLimit)
 
-        EXEC CreateEducationForm 9999, 'Course', @price, @wholePriceDueDate, @advanceDueDays, @advance,
+        EXEC CreateEducationForm @courseId, 'Course', @price, @wholePriceDueDate, @advanceDueDays, @advance,
              @accessFor
     END
 END
@@ -234,7 +234,7 @@ BEGIN
             BEGIN
                 DECLARE @webinarId int = dbo.nextWebinarId()
                 INSERT INTO Webinars (webinarId, onlineMeetingId) VALUES (@webinarId, @meetingId)
-                INSERT INTO WebinarDetails (webinarId, title, description, price)
+                INSERT INTO WebinarDetails (webinarDetailsId, title, description, price)
                 VALUES (@webinarId, @title, @description, @price)
             END
         INSERT INTO WebinarMeetings (onlineMeetingId, link, recordingLink, date)
@@ -471,7 +471,7 @@ BEGIN
     END
 END
 BEGIN
-    CREATE PROCEDURE AssignEducationFormToUser(@userId int, @educationFormId int) AS
+    CREATE PROCEDURE __AssignEducationFormToUser(@userId int, @educationFormId int) AS
     BEGIN
         IF NOT EXISTS (SELECT *
                        FROM Users
@@ -521,6 +521,30 @@ BEGIN
         DEALLOCATE cart_cursor
     END
 END
+BEGIN
+    CREATE PROCEDURE AssignStudentToStudies AS
+    BEGIN
+        INSERT INTO Students (userId, studiesId, semester)
+        SELECT userId, studiesId, semester
+        FROM AwaitingStudents
+    END
+END
 
-
-
+BEGIN
+    CREATE PROCEDURE AreFreeSlotsInAll(@userId int) AS
+    BEGIN
+        DECLARE @userCart userCart = dbo.getCartForUser(@userId)
+        DECLARE @educationFormId int
+        DECLARE cart_cursor CURSOR FOR SELECT educationFormId FROM @userCart
+        OPEN cart_cursor
+        FETCH NEXT FROM cart_cursor INTO @educationFormId
+        WHILE @@FETCH_STATUS = 0
+            BEGIN
+                IF dbo.areFreeSlotsAvailable(@educationFormId) = 0
+                    BEGIN
+                        RAISERROR ('No free slots available for education form %d', 16, 1, @educationFormId)
+                    END
+                FETCH NEXT FROM cart_cursor INTO @educationFormId
+            END
+    END
+END

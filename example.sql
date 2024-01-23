@@ -91,3 +91,80 @@ EXEC AddToCart 1, 1001, 'webinar'
 SELECT *
 FROM dbo.getCartForUser(1)
 EXEC FinalizeCart 1
+
+
+--
+SELECT courseId, dbo.getFreeCourseSlots(courseId)
+FROM Courses
+WHERE courseId = 1050
+
+SELECT *
+FROM EducationForms
+WHERE specificId = 1050
+
+DELETE
+FROM AssignedEducationForms
+WHERE (userId = 7 OR userId = 8)
+  AND educationFormId = 50
+
+SELECT *
+FROM AssignedEducationForms
+WHERE educationFormId = 50
+
+EXEC AddToCart 7, 1050, 'course'
+EXEC AddToCart 8, 1050, 'course'
+
+
+SELECT *
+FROM dbo.getCartForUser(7)
+EXEC AreFreeSlotsInAllFormsInCart 7
+
+DECLARE @myPaymentLink varchar(255)
+EXEC dbo.generatePaymentLink 7, @paymentLink = @myPaymentLink OUTPUT
+SELECT @myPaymentLink
+INSERT INTO PaymentsHistory (paymentId, userId, paymentDate, payedFor, amount, paymentDetails)
+VALUES (dbo.nextPaymentId(), 8, GETDATE(), 1, 833, 'course1050')
+
+SELECT *
+FROM PaymentsHistory
+WHERE userId = 8
+
+
+--
+SELECT *
+FROM dbo.getCartForUser(1)
+SELECT *
+FROM Courses
+SELECT *
+FROM Studies
+--sprawdzmy educationFormId
+SELECT *
+FROM EducationForms
+WHERE specificId = 273
+  AND type = 'webinar'
+SELECT *
+FROM EducationForms
+WHERE specificId = 1002
+  AND type = 'course'
+
+-- EXEC ClearCart 1
+EXEC AddToCart 1, 1002, 'course'
+EXEC AddToCart 1, 1, 'studies'
+EXEC AddToCart 1, 273, 'webinar'
+
+DECLARE @myPaymentLink varchar(255)
+EXEC generatePaymentLink 1, @myPaymentLink OUTPUT
+SELECT @myPaymentLink
+
+SELECT *
+FROM AssignedEducationForms
+WHERE userId = 1
+
+
+INSERT INTO PaymentsHistory (paymentId, userId, paymentDate, payedFor, amount, paymentDetails)
+VALUES (dbo.nextPaymentId(), 1, GETDATE(), 60, 888, 'koszyk1')
+
+SELECT *
+FROM Webinars
+
+EXEC CreateWebinar 'test', 'abc', '2025-01-01 15:00:00', 100, 'test', 10

@@ -64,13 +64,14 @@ CREATE TABLE [EducationForms]
 CREATE UNIQUE NONCLUSTERED INDEX SPECIFIC_EDUCATION_FORM
     ON [EducationForms] (specificId, type);
 GO
-CREATE TABLE Cart(
-    [userId] int NOT NULL,
-    [educationFormId] int NOT NULL,
-    [addedDate] datetime NOT NULL DEFAULT GETDATE(),
+CREATE TABLE Cart
+(
+    [userId]          int      NOT NULL,
+    [educationFormId] int      NOT NULL,
+    [addedDate]       datetime NOT NULL DEFAULT GETDATE(),
     PRIMARY KEY ([userId], [educationFormId])
 )
-alter TABLE Cart
+ALTER TABLE Cart
     ADD FOREIGN KEY ([userId]) REFERENCES [Users] ([userId])
 ALTER TABLE Cart
     ADD FOREIGN KEY ([educationFormId]) REFERENCES [EducationForms] ([educationFormId])
@@ -151,17 +152,19 @@ GO
 
 CREATE TABLE [WebinarDetails]
 (
-    [webinarId]   int PRIMARY KEY NOT NULL IDENTITY (1,1),
-    [title]       nvarchar(255)   NOT NULL,
-    [description] nvarchar(255)   NOT NULL,
-    [price]       money           NOT NULL
+    [webinarDetailsId] int PRIMARY KEY NOT NULL IDENTITY (1,1),
+    [title]            nvarchar(255)   NOT NULL,
+    [description]      nvarchar(255)   NOT NULL,
+    [price]            money           NOT NULL
+        CHECK (price >= 0)
 )
 GO
 CREATE TABLE [Webinars]
 (
-    [webinarId]       int        NOT NULL,
-    [onlineMeetingId] int UNIQUE NOT NULL
-        PRIMARY KEY ([webinarId], [onlineMeetingId])
+    [webinarId]        int        NOT NULL IDENTITY (1,1),
+    [webinarDetailsId] int        NOT NULL,
+    [onlineMeetingId]  int UNIQUE NOT NULL,
+    PRIMARY KEY ([webinarId])
 )
 GO
 CREATE TABLE [Studies]
@@ -186,6 +189,20 @@ ALTER TABLE [Students]
     ADD FOREIGN KEY ([userId]) REFERENCES [Users] ([userId])
 
 ALTER TABLE [Students]
+    ADD FOREIGN KEY ([studiesId]) REFERENCES [Studies] ([studiesId])
+
+CREATE TABLE [AwaitingStudents]
+(
+    [userId]    int NOT NULL,
+    [studiesId] int NOT NULL,
+    [semester]  int NOT NULL DEFAULT 1
+        CHECK (semester > 0 AND semester < 9)
+)
+ALTER TABLE [AwaitingStudents]
+    ADD PRIMARY KEY ([userId], [studiesId])
+ALTER TABLE [AwaitingStudents]
+    ADD FOREIGN KEY ([userId]) REFERENCES [Users] ([userId])
+ALTER TABLE [AwaitingStudents]
     ADD FOREIGN KEY ([studiesId]) REFERENCES [Studies] ([studiesId])
 
 CREATE TABLE [Syllabuses]
@@ -352,7 +369,7 @@ CREATE TABLE [Practices]
     [userId]    int  NOT NULL,
     [startDate] date NOT NULL,
     [endDate]   date NOT NULL,
-    PRIMARY KEY ([studiesId], [userId])
+    PRIMARY KEY ([studiesId], [userId], [startDate], [endDate])
 )
 GO
 
@@ -381,7 +398,6 @@ CREATE TABLE [OnlineStudiesMeetings]
 )
 GO
 
-
 CREATE TABLE [StudiesAttendance]
 (
     [userId]           int NOT NULL,
@@ -392,12 +408,12 @@ GO
 
 CREATE TABLE [EducationFormPrice]
 (
-    [priceId]         int PRIMARY KEY NOT NULL IDENTITY (1,1),
-    [educationFormId] int             NOT NULL,
-    [advanceDue]      int             NOT NULL,
-    [advance]         money           NOT NULL,
-    [wholePrice]      money           NOT NULL,
-    [accessFor]       int DEFAULT 5*365 NOT NULL,
+    [priceId]         int PRIMARY KEY     NOT NULL IDENTITY (1,1),
+    [educationFormId] int                 NOT NULL,
+    [advanceDue]      int                 NOT NULL,
+    [advance]         money               NOT NULL,
+    [wholePrice]      money               NOT NULL,
+    [accessFor]       int DEFAULT 5 * 365 NOT NULL,
     CHECK (advance >= 0),
     CHECK (advance <= wholePrice),
     CHECK (accessFor > 0),
@@ -510,7 +526,7 @@ ALTER TABLE [Cities]
 GO
 
 ALTER TABLE [Webinars]
-    ADD FOREIGN KEY ([webinarId]) REFERENCES [WebinarDetails] ([webinarId])
+    ADD FOREIGN KEY ([webinarDetailsId]) REFERENCES [WebinarDetails] (webinarDetailsId)
 GO
 
 ALTER TABLE [Modules]
