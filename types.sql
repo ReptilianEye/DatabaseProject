@@ -5,10 +5,10 @@ CREATE TYPE usersList AS table
 CREATE TYPE userCart AS TABLE
 (
     educationFormId int,
-    specificId int,
-    title varchar(100),
-    type varchar(100),
-    advance money,
-    advanceDue int,
-    wholePrice money
+    specificId      int,
+    title           varchar(100),
+    type            varchar(100),
+    advance         money,
+    advanceDue      int,
+    wholePrice      money
 )
