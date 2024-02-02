@@ -25,7 +25,7 @@ You can find schema model in [schemaModel](/schemaModel/) folder.
 ## Authors
 
 - [**Piotr Rzadkowski**](https://github.com/ReptilianEye)
-- [**Michał Dydek**](https://https://github.com/lachimex)
+- [**Michał Dydek**](https://github.com/lachimex)
 - [**Mikołaj Gosztyła**](https://github.com/Mikosztyla)
 
 ## License
