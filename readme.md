@@ -30,4 +30,4 @@ You can find schema model in [schemaModel](/schemaModel/) folder.
 
 ## License
 
-This project is under [MIT license](/licence).
+This project is under [MIT license](/license).
